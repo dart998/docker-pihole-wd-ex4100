@@ -18,12 +18,24 @@ This project keeps the official Pi-hole Docker source and applies only the compa
 4. Build only for `linux/arm/v7`.
 5. Publish a single-platform image without provenance or SBOM metadata for older Docker engines.
 
-## Image
+## Why there is no Dockerfile at the repository root
 
-Default target:
+The real Dockerfile is the official version-specific file from `pi-hole/docker-pi-hole`. The build process clones the selected upstream tag into `.build`, patches `.build/src/Dockerfile`, validates the resulting file and builds from that directory.
+
+Keeping a copied root Dockerfile would silently drift away from upstream and would also require vendoring all files referenced by the official Dockerfile, such as `start.sh`, `bash_functions.sh` and `crontab.txt`.
+
+The generated build file is therefore:
 
 ```text
-ovelayos/pihole-wd-ex4100:2026.07.2-ex4100-r4
+.build/src/Dockerfile
+```
+
+## Image
+
+Current verified upstream target:
+
+```text
+ovelayos/pihole-wd-ex4100:2026.04.1-ex4100-r4
 ```
 
 This is an unofficial compatibility build. Pi-hole itself remains the upstream project.
@@ -41,10 +53,10 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 .\build-and-push.ps1 `
   -DockerHubUser ovelayos `
-  -PiholeTag 2026.07.2
+  -PiholeTag 2026.04.1
 ```
 
-The script clones the exact upstream tag, applies the compatibility patch, builds `linux/arm/v7`, runs smoke tests and pushes the image.
+The script clones the exact upstream tag, applies the compatibility patch, builds `linux/arm/v7`, validates Alpine, LF endings and the ARMv7 FTL binary, and only then pushes the image.
 
 ## First deployment: diagnostic stack
 
@@ -95,4 +107,4 @@ The GitHub Actions workflow expects these repository secrets:
 - `DOCKERHUB_USERNAME` — normally `ovelayos`
 - `DOCKERHUB_TOKEN` — a Docker Hub access token
 
-Run the workflow manually and provide the upstream Pi-hole tag to publish.
+Run the workflow manually and provide an existing upstream Pi-hole tag. The workflow builds locally, runs smoke tests and only publishes the validated image.
