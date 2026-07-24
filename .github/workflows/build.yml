@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       pihole_tag:
-        description: Upstream pi-hole/docker-pi-hole tag
+        description: Existing upstream pi-hole/docker-pi-hole tag
         required: true
-        default: "2026.07.2"
+        default: "2026.04.1"
       revision:
         description: EX4100 compatibility revision
         required: true
@@ -16,8 +16,11 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-test-push:
     runs-on: ubuntu-latest
+    env:
+      LOCAL_IMAGE: pihole-wd-ex4100:test
+      RELEASE_IMAGE: ovelayos/pihole-wd-ex4100:${{ inputs.pihole_tag }}-ex4100-${{ inputs.revision }}
 
     steps:
       - name: Checkout
@@ -25,9 +28,54 @@ jobs:
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Prepare and validate patched upstream source
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x scripts/prepare-source.sh
+          scripts/prepare-source.sh "${{ inputs.pihole_tag }}" .build
+
+          test -f .build/src/Dockerfile
+          grep -q '^FROM alpine:3.17.10 AS base$' .build/src/Dockerfile
+          grep -qE '^[[:space:]]+procps( |\\)$' .build/src/Dockerfile
+          grep -q 'WD EX4100 compatibility: normalize shell scripts to LF' .build/src/Dockerfile
+          grep -q 'ENTRYPOINT \["start.sh"\]' .build/src/Dockerfile
+
+      - name: Build ARMv7 image locally
+        uses: docker/build-push-action@v6
+        with:
+          context: .build/src
+          file: .build/src/Dockerfile
+          platforms: linux/arm/v7
+          load: true
+          push: false
+          provenance: false
+          sbom: false
+          tags: ${{ env.LOCAL_IMAGE }}
+          build-args: |
+            PIHOLE_DOCKER_TAG=${{ inputs.pihole_tag }}
+            CORE_BRANCH=master
+            WEB_BRANCH=master
+            FTL_BRANCH=master
+            PADD_BRANCH=master
+
+      - name: Smoke test image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker image inspect "$LOCAL_IMAGE" --format '{{.Architecture}}' | grep -q '^arm$'
+          docker run --rm --platform linux/arm/v7 --entrypoint /bin/sh "$LOCAL_IMAGE" -c '
+            set -eu
+            test "$(head -n 1 /usr/bin/start.sh)" = "#!/bin/bash"
+            ! grep -RIl $'"'"'\r'"'"' /usr/bin /usr/local/bin /opt/pihole 2>/dev/null | grep -q .
+            pihole-FTL -vv
+          '
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -35,21 +83,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Prepare patched upstream source
+      - name: Push validated image
+        shell: bash
         run: |
-          chmod +x scripts/prepare-source.sh
-          scripts/prepare-source.sh "${{ inputs.pihole_tag }}" .build
-
-      - name: Build and push ARMv7 image
-        uses: docker/build-push-action@v6
-        with:
-          context: .build/src
-          file: .build/src/Dockerfile
-          platforms: linux/arm/v7
-          push: true
-          provenance: false
-          sbom: false
-          tags: |
-            ovelayos/pihole-wd-ex4100:${{ inputs.pihole_tag }}-ex4100-${{ inputs.revision }}
-            ovelayos/pihole-wd-ex4100:latest-ex4100-armv7
-            ovelayos/pihole-wd-ex4100:legacy-armv7
+          set -euo pipefail
+          docker tag "$LOCAL_IMAGE" "$RELEASE_IMAGE"
+          docker tag "$LOCAL_IMAGE" ovelayos/pihole-wd-ex4100:latest-ex4100-armv7
+          docker tag "$LOCAL_IMAGE" ovelayos/pihole-wd-ex4100:legacy-armv7
+          docker push "$RELEASE_IMAGE"
+          docker push ovelayos/pihole-wd-ex4100:latest-ex4100-armv7
+          docker push ovelayos/pihole-wd-ex4100:legacy-armv7
