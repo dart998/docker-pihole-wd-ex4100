@@ -2,7 +2,7 @@ version: "2.4"
 
 services:
   pihole:
-    image: ovelayos/pihole-wd-ex4100:2026.07.2-ex4100-r4
+    image: ovelayos/pihole-wd-ex4100:2026.04.1-ex4100-r4
     container_name: pihole-ex4100
     hostname: pihole-ex4100
     restart: unless-stopped
