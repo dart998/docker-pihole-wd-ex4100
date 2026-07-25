@@ -41,11 +41,19 @@ jobs:
           chmod +x scripts/prepare-source.sh
           scripts/prepare-source.sh "${{ inputs.pihole_tag }}" .build
 
-          test -f .build/src/Dockerfile
-          grep -q '^FROM alpine:3.17.10 AS base$' .build/src/Dockerfile
-          grep -qE '^[[:space:]]+procps( |\\)$' .build/src/Dockerfile
-          grep -q 'WD EX4100 compatibility: normalize shell scripts to LF' .build/src/Dockerfile
-          grep -q 'ENTRYPOINT \["start.sh"\]' .build/src/Dockerfile
+          DOCKERFILE=.build/src/Dockerfile
+          test -f "$DOCKERFILE"
+
+          echo "Validating generated Dockerfile..."
+          grep -n -F 'FROM alpine:3.17.10 AS base' "$DOCKERFILE"
+          grep -n -E '^[[:space:]]+procps[[:space:]]*\\$' "$DOCKERFILE"
+          if grep -n -F 'procps-ng' "$DOCKERFILE"; then
+            echo 'ERROR: procps-ng remains in the patched Dockerfile.' >&2
+            exit 1
+          fi
+          grep -n -F 'WD EX4100 compatibility: normalize shell scripts to LF' "$DOCKERFILE"
+          grep -n -F 'ENTRYPOINT ["start.sh"]' "$DOCKERFILE"
+          echo "Patched Dockerfile validation passed."
 
       - name: Build ARMv7 image locally
         uses: docker/build-push-action@v6
