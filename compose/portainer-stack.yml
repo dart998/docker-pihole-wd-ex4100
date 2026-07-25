@@ -5,18 +5,15 @@ services:
     image: ${PIHOLE_IMAGE:-ovelayos/pihole-wd-ex4100:2026.04.1-ex4100-r4}
     container_name: ${CONTAINER_NAME:-pihole-ex4100}
     hostname: ${HOSTNAME:-pihole-ex4100}
+    network_mode: host
     restart: unless-stopped
-
-    ports:
-      - "${DNS_PORT:-53}:53/tcp"
-      - "${DNS_PORT:-53}:53/udp"
-      - "${WEB_PORT:-8081}:80/tcp"
-      - "${HTTPS_PORT:-8443}:443/tcp"
 
     environment:
       TZ: ${TZ:-Europe/Madrid}
       FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD}
       FTLCONF_dns_listeningMode: ${DNS_LISTENING_MODE:-ALL}
+      FTLCONF_dns_upstreams: ${DNS_UPSTREAMS:-8.8.8.8;8.8.4.4}
+      FTLCONF_webserver_port: ${WEB_SERVER_PORTS:-8081o,[::]:8081o,8443os,[::]:8443os}
 
     volumes:
       - ${PIHOLE_CONFIG_PATH:-/shares/Volume_1/docker/pihole-ex4100/etc-pihole}:/etc/pihole
