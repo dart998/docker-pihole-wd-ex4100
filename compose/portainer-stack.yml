@@ -14,7 +14,7 @@ services:
       - "${HTTPS_PORT:-8443}:443/tcp"
 
     environment:
-      TZ: ${TZ:-Europe/Andorra}
+      TZ: ${TZ:-Europe/Madrid}
       FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD}
       FTLCONF_dns_listeningMode: ${DNS_LISTENING_MODE:-ALL}
 
