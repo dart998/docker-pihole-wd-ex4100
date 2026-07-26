@@ -28,12 +28,6 @@
           "default": "Europe/Madrid"
         },
         {
-          "name": "DNS_UPSTREAMS",
-          "label": "Upstream DNS servers",
-          "description": "Semicolon-separated upstream DNS servers.",
-          "default": "8.8.8.8;8.8.4.4"
-        },
-        {
           "name": "WEB_SERVER_PORTS",
           "label": "Pi-hole web server ports",
           "description": "Pi-hole FTL webserver port definition for HTTP and HTTPS.",
