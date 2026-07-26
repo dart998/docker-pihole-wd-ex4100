@@ -24,7 +24,7 @@ on:
       - "scripts/**"
       - "build-and-push.ps1"
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 4 * * *"
 
 permissions:
   contents: write
@@ -184,6 +184,31 @@ jobs:
           docker push "$RELEASE_IMAGE"
           docker push ovelayos/pihole-wd-ex4100:latest-ex4100-armv7
           docker push ovelayos/pihole-wd-ex4100:legacy-armv7
+
+      - name: Promote validated image in stable stack
+        if: steps.release.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch origin main
+          git reset --hard origin/main
+
+          python3 scripts/update-stable-version.py "$REPO_TAG" "$PIHOLE_TAG"
+          git diff --check
+
+          grep -F "image: \${PIHOLE_IMAGE:-${RELEASE_IMAGE}}" compose/portainer-stack.yml
+          grep -Fx "PIHOLE_IMAGE=${RELEASE_IMAGE}" .env.example
+
+          if git diff --quiet; then
+            echo "Stable references already point to ${RELEASE_IMAGE}."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add compose/portainer-stack.yml .env.example README.md
+            git commit -m "Promote Pi-hole ${PIHOLE_TAG} EX4100 image"
+            git push origin HEAD:main
+          fi
 
       - name: Create repository tag
         if: steps.release.outputs.skip != 'true'
