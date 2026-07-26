@@ -37,21 +37,39 @@ ovelayos/pihole-wd-ex4100:legacy-armv7
 
 This is an unofficial compatibility build. Pi-hole itself remains the upstream project.
 
-## Why there is no Dockerfile at the repository root
+## Portainer App Template catalog
 
-The build process clones the exact official `pi-hole/docker-pi-hole` tag into `.build`, patches `.build/src/Dockerfile`, validates it and builds from the complete official source context.
-
-The generated Dockerfile is:
+Portainer does not discover templates by scanning a Git repository. Configure the catalog using this exact URL:
 
 ```text
-.build/src/Dockerfile
+https://raw.githubusercontent.com/dart998/docker-pihole-wd-ex4100/main/templates.json
 ```
 
-Keeping a copied Dockerfile at the repository root would drift from upstream and would not include all required source files such as `start.sh`, `bash_functions.sh` and `crontab.txt`.
+In Portainer:
 
-## Portainer Custom Template
+1. Open **Settings**.
+2. Find **App Templates** or **Template URL**.
+3. Replace or add the URL above.
+4. Save the settings.
+5. Open **App Templates** and select **Pi-hole WD EX4100 ARMv7**.
 
-Use these values when creating a Portainer custom template:
+The catalog file is:
+
+```text
+templates.json
+```
+
+It defines a Compose stack template (`type: 3`) and loads:
+
+```text
+compose/portainer-stack.yml
+```
+
+The deployment form exposes the Pi-hole password, timezone, upstream DNS servers, web ports and persistent data paths.
+
+## Manual Portainer Custom Template
+
+The template can also be created manually with:
 
 ```text
 Title: pihole-wd-ex4100-armv7
@@ -81,7 +99,7 @@ HTTP: 32768
 HTTPS: 32769
 ```
 
-The WD My Cloud web interface already occupies ports 80 and 443, so Pi-hole uses the historical EX4100 web port `32768` and `32769` for HTTPS.
+The WD My Cloud web interface occupies ports 80 and 443, so Pi-hole uses the historical EX4100 web port `32768` and `32769` for HTTPS.
 
 Web access:
 
@@ -132,6 +150,18 @@ compose/portainer-generic.yml
 ```
 
 The generic stack uses traditional port mappings and is not the recommended option for the WD EX4100.
+
+## Why there is no Dockerfile at the repository root
+
+The build process clones the exact official `pi-hole/docker-pi-hole` tag into `.build`, patches `.build/src/Dockerfile`, validates it and builds from the complete official source context.
+
+The generated Dockerfile is:
+
+```text
+.build/src/Dockerfile
+```
+
+Keeping a copied Dockerfile at the repository root would drift from upstream and would not include all required source files such as `start.sh`, `bash_functions.sh` and `crontab.txt`.
 
 ## Local build from Windows
 
