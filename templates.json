@@ -37,7 +37,7 @@
           "name": "WEB_SERVER_PORTS",
           "label": "Pi-hole web server ports",
           "description": "Pi-hole FTL webserver port definition for HTTP and HTTPS.",
-          "default": "32768o,[::]:32768o,32769os,[::]:32769os"
+          "default": "32768,32769s"
         },
         {
           "name": "PIHOLE_CONFIG_PATH",
