@@ -9,11 +9,11 @@ services:
     restart: unless-stopped
 
     environment:
-      TZ: ${TZ:-Europe/Madrid}
-      FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD}
-      FTLCONF_dns_listeningMode: ${DNS_LISTENING_MODE:-ALL}
-      FTLCONF_dns_upstreams: ${DNS_UPSTREAMS:-8.8.8.8;8.8.4.4}
-      FTLCONF_webserver_port: ${WEB_SERVER_PORTS:-32768o,[::]:32768o,32769os,[::]:32769os}
+      TZ: "${TZ:-Europe/Madrid}"
+      FTLCONF_webserver_api_password: "${PIHOLE_PASSWORD}"
+      FTLCONF_dns_listeningMode: "${DNS_LISTENING_MODE:-ALL}"
+      FTLCONF_dns_upstreams: "${DNS_UPSTREAMS:-8.8.8.8;8.8.4.4}"
+      FTLCONF_webserver_port: "${WEB_SERVER_PORTS:-32768,32769s}"
 
     volumes:
       - ${PIHOLE_CONFIG_PATH:-/shares/Volume_1/docker/pihole-ex4100/etc-pihole}:/etc/pihole
