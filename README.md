@@ -9,6 +9,7 @@ The EX4100 runs kernel `4.14.22-armada-18.09.3`. On this device:
 - Alpine `3.17.10` runs correctly.
 - Alpine `3.18+` exits immediately with code `139`.
 - Current official Pi-hole images use a newer Alpine base.
+- Docker bridge port publishing for DNS can fail on the EX4100 even when Pi-hole works correctly inside the container.
 
 This project keeps the official Pi-hole Docker source and applies only the compatibility changes required by the EX4100:
 
@@ -17,16 +18,120 @@ This project keeps the official Pi-hole Docker source and applies only the compa
 3. Normalize shell scripts to Unix LF endings.
 4. Build only for `linux/arm/v7`.
 5. Publish a single-platform image without provenance or SBOM metadata for older Docker engines.
+6. Use host networking in the EX4100 Portainer stack to avoid the legacy Docker DNS proxy problem.
 
 ## Image
 
-Default target:
+Current image:
 
 ```text
-ovelayos/pihole-wd-ex4100:2026.07.2-ex4100-r4
+ovelayos/pihole-wd-ex4100:2026.04.1-ex4100-r4
+```
+
+Rolling aliases:
+
+```text
+ovelayos/pihole-wd-ex4100:latest-ex4100-armv7
+ovelayos/pihole-wd-ex4100:legacy-armv7
 ```
 
 This is an unofficial compatibility build. Pi-hole itself remains the upstream project.
+
+## Why there is no Dockerfile at the repository root
+
+The build process clones the exact official `pi-hole/docker-pi-hole` tag into `.build`, patches `.build/src/Dockerfile`, validates it and builds from the complete official source context.
+
+The generated Dockerfile is:
+
+```text
+.build/src/Dockerfile
+```
+
+Keeping a copied Dockerfile at the repository root would drift from upstream and would not include all required source files such as `start.sh`, `bash_functions.sh` and `crontab.txt`.
+
+## Portainer Custom Template
+
+Use these values when creating a Portainer custom template:
+
+```text
+Title: pihole-wd-ex4100-armv7
+Repository URL: https://github.com/dart998/docker-pihole-wd-ex4100
+Repository reference: refs/heads/main
+Compose path: compose/portainer-stack.yml
+Authentication: disabled
+Skip TLS verification: disabled
+```
+
+The repository is public and does not contain passwords or Docker Hub tokens. Real secrets must be supplied through Portainer environment variables or GitHub repository secrets.
+
+## EX4100 deployment
+
+The recommended stack is:
+
+```text
+compose/portainer-stack.yml
+```
+
+It uses:
+
+```text
+network_mode: host
+DNS: 53/tcp and 53/udp
+HTTP: 32768
+HTTPS: 32769
+```
+
+The WD My Cloud web interface already occupies ports 80 and 443, so Pi-hole uses the historical EX4100 web port `32768` and `32769` for HTTPS.
+
+Web access:
+
+```text
+http://EX4100_IP:32768/admin/
+https://EX4100_IP:32769/admin/
+```
+
+DNS server:
+
+```text
+EX4100_IP:53
+```
+
+## Environment variables
+
+Copy `.env.example` or define the variables directly in Portainer.
+
+Minimum required value:
+
+```env
+PIHOLE_PASSWORD=CAMBIA_ESTA_PASSWORD
+```
+
+Default configuration:
+
+```env
+PIHOLE_IMAGE=ovelayos/pihole-wd-ex4100:2026.04.1-ex4100-r4
+CONTAINER_NAME=pihole-ex4100
+HOSTNAME=pihole-ex4100
+TZ=Europe/Madrid
+PIHOLE_PASSWORD=CAMBIA_ESTA_PASSWORD
+DNS_LISTENING_MODE=ALL
+DNS_UPSTREAMS=8.8.8.8;8.8.4.4
+WEB_SERVER_PORTS=32768o,[::]:32768o,32769os,[::]:32769os
+PIHOLE_CONFIG_PATH=/shares/Volume_1/docker/pihole-ex4100/etc-pihole
+DNSMASQ_CONFIG_PATH=/shares/Volume_1/docker/pihole-ex4100/etc-dnsmasq.d
+```
+
+Never commit a real `.env` file. The repository ignores `.env` and `.env.*`, except `.env.example`.
+
+## Generic ARMv7 stack
+
+For other ARMv7 systems where Docker bridge networking works normally, use:
+
+```text
+compose/portainer-generic.yml
+```
+
+The generic stack uses traditional port mappings and is not the recommended option for the WD EX4100.
 
 ## Local build from Windows
 
@@ -35,44 +140,74 @@ Requirements:
 - Docker Desktop with Buildx
 - Git
 - PowerShell 7
+- QEMU support through Docker Desktop
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 
 .\build-and-push.ps1 `
   -DockerHubUser ovelayos `
-  -PiholeTag 2026.07.2
+  -PiholeTag 2026.04.1 `
+  -Revision r4
 ```
 
-The script clones the exact upstream tag, applies the compatibility patch, builds `linux/arm/v7`, runs smoke tests and pushes the image.
+The script clones the exact upstream tag, applies the EX4100 compatibility patch, builds `linux/arm/v7`, validates Alpine, LF line endings and the FTL binary, and only then publishes the image.
 
-## First deployment: diagnostic stack
+## GitHub Actions
 
-Deploy [`compose/diagnostic.yml`](compose/diagnostic.yml) first. It does not use persistent volumes and maps DNS to port `8053`, so it can run alongside an existing Pi-hole.
+The build workflow runs automatically on pushes to `main` and can also be started manually.
 
-Web interface:
+Required repository secrets:
 
 ```text
-http://EX4100_IP:8081/admin/
+DOCKERHUB_USERNAME
+DOCKERHUB_TOKEN
 ```
 
-Follow logs:
+The workflow:
+
+1. Clones the selected official Pi-hole Docker tag.
+2. Applies and validates the EX4100 patch.
+3. Builds a local ARMv7 image.
+4. Runs smoke tests through QEMU.
+5. Pushes the validated image to Docker Hub.
+
+## Persistent data
+
+The default host directories are:
+
+```text
+/shares/Volume_1/docker/pihole-ex4100/etc-pihole
+/shares/Volume_1/docker/pihole-ex4100/etc-dnsmasq.d
+```
+
+Back up these directories before replacing or migrating an existing Pi-hole installation.
+
+Do not mount the only copy of an old Pi-hole configuration during the first migration test. Work from a copy so rollback remains possible.
+
+## Basic verification
+
+After deployment:
 
 ```sh
-docker logs -f pihole-ex4100-diag
+docker ps --filter name=pihole-ex4100
+docker logs --tail 100 pihole-ex4100
+docker exec pihole-ex4100 cat /etc/alpine-release
+docker exec pihole-ex4100 pihole-FTL -vv
 ```
 
-## Production deployment
+Expected Alpine version:
 
-Only after the diagnostic container stays running:
+```text
+3.17.10
+```
 
-1. Stop the old Pi-hole container.
-2. Back up its `/etc/pihole` data.
-3. Edit the host paths and password in [`compose/production.yml`](compose/production.yml).
-4. Deploy the production stack.
-5. Point clients or the router to the EX4100 IP on DNS port 53.
+Test DNS from another device:
 
-Do not mount the original Pi-hole directory directly during the first migration test. Copy it to a new directory so rollback remains possible.
+```powershell
+nslookup google.com EX4100_IP
+nslookup pi.hole EX4100_IP
+```
 
 ## NTP warning
 
@@ -82,17 +217,10 @@ Pi-hole may log:
 Insufficient permissions to set system time (CAP_SYS_TIME required)
 ```
 
-This does not prevent DNS or the web interface from working. `SYS_TIME` is intentionally not granted.
+This warning does not prevent DNS or the web interface from working. `SYS_TIME` is intentionally not granted.
 
 ## Security and maintenance
 
-Alpine 3.17 is end-of-life. This image is a compatibility workaround for legacy NAS hardware and should be isolated and updated carefully. The long-term safer option is to run Pi-hole on a maintained host or virtual machine.
+Alpine 3.17 is end-of-life. This image is a compatibility workaround for legacy NAS hardware and should be isolated and updated carefully.
 
-## Docker Hub automation
-
-The GitHub Actions workflow expects these repository secrets:
-
-- `DOCKERHUB_USERNAME` — normally `ovelayos`
-- `DOCKERHUB_TOKEN` — a Docker Hub access token
-
-Run the workflow manually and provide the upstream Pi-hole tag to publish.
+The long-term safer option is to run Pi-hole on maintained hardware, a supported virtual machine or a current Linux host.
