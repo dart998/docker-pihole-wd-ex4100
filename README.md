@@ -82,6 +82,29 @@ Skip TLS verification: disabled
 
 The repository is public and does not contain passwords or Docker Hub tokens. Real secrets must be supplied through Portainer environment variables or GitHub repository secrets.
 
+## Automatic Portainer updates
+
+To let Portainer deploy validated Pi-hole releases automatically, create the stack using **Stacks → Add stack → Git repository** rather than from App Templates.
+
+Use:
+
+```text
+Repository URL: https://github.com/dart998/docker-pihole-wd-ex4100
+Repository reference: refs/heads/main
+Compose path: compose/portainer-stack.yml
+```
+
+Enable automatic updates with:
+
+```text
+Mechanism: Polling
+Fetch interval: 24h
+Re-pull image: disabled
+Force redeployment: disabled
+```
+
+`Re-pull image` and `Force redeployment` may appear as Business Edition features in Portainer Community Edition. They are not required by this project: each validated release receives a new immutable image tag and the workflow commits that new tag to `main`. Portainer detects the new Git commit, redeploys the stack, and Docker downloads the newly referenced image because its tag has changed.
+
 ## EX4100 deployment
 
 The recommended stack is:
@@ -184,7 +207,7 @@ The script clones the exact upstream tag, applies the EX4100 compatibility patch
 
 ## GitHub Actions
 
-The build workflow checks the latest stable official Pi-hole Docker release every six hours. It can also be started manually and runs when the build workflow or compatibility scripts change on `main`.
+The build workflow checks the latest stable official Pi-hole Docker release once a day at `04:17 UTC`. It can also be started manually and runs when the build workflow or compatibility scripts change on `main`.
 
 Required repository secrets:
 
@@ -201,7 +224,10 @@ For each new official release, the workflow:
 4. Builds a local single-platform `linux/arm/v7` image without provenance or SBOM metadata.
 5. Runs smoke tests through QEMU.
 6. Pushes the versioned image and rolling aliases to Docker Hub.
-7. Creates the repository tag only after the image has been built, tested and pushed successfully.
+7. Updates the stable image references in the Portainer stack, `.env.example` and README, then commits them to `main`.
+8. Creates the repository tag only after the image has been built, tested, published and promoted successfully.
+
+That promotion commit is what Portainer Git polling detects to update the running stack.
 
 Repository tags use this format:
 
