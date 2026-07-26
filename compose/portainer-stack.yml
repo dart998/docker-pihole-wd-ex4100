@@ -2,7 +2,7 @@ version: "2.4"
 
 services:
   pihole:
-    image: ${PIHOLE_IMAGE:-ovelayos/pihole-wd-ex4100:2026.04.1-ex4100-r4}
+    image: ${PIHOLE_IMAGE:-ovelayos/pihole-wd-ex4100:2026.07.2-ex4100-r4}
     container_name: ${CONTAINER_NAME:-pihole-ex4100}
     hostname: ${HOSTNAME:-pihole-ex4100}
     network_mode: host
