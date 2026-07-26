@@ -37,54 +37,9 @@ ovelayos/pihole-wd-ex4100:legacy-armv7
 
 This is an unofficial compatibility build. Pi-hole itself remains the upstream project.
 
-## Portainer App Template catalog
+## Portainer deployment from Git
 
-Portainer does not discover templates by scanning a Git repository. Configure the catalog using this exact URL:
-
-```text
-https://raw.githubusercontent.com/dart998/docker-pihole-wd-ex4100/main/templates.json
-```
-
-In Portainer:
-
-1. Open **Settings**.
-2. Find **App Templates** or **Template URL**.
-3. Replace or add the URL above.
-4. Save the settings.
-5. Open **App Templates** and select **Pi-hole WD EX4100 ARMv7**.
-
-The catalog file is:
-
-```text
-templates.json
-```
-
-It defines a Compose stack template (`type: 3`) and loads:
-
-```text
-compose/portainer-stack.yml
-```
-
-The deployment form exposes the Pi-hole password, timezone, web ports and persistent data paths. Upstream DNS servers remain configurable from the Pi-hole web interface.
-
-## Manual Portainer Custom Template
-
-The template can also be created manually with:
-
-```text
-Title: pihole-wd-ex4100-armv7
-Repository URL: https://github.com/dart998/docker-pihole-wd-ex4100
-Repository reference: refs/heads/main
-Compose path: compose/portainer-stack.yml
-Authentication: disabled
-Skip TLS verification: disabled
-```
-
-The repository is public and does not contain passwords or Docker Hub tokens. Real secrets must be supplied through Portainer environment variables or GitHub repository secrets.
-
-## Automatic Portainer updates
-
-To let Portainer deploy validated Pi-hole releases automatically, create the stack using **Stacks → Add stack → Git repository** rather than from App Templates.
+Create the stack using **Stacks → Add stack → Git repository**.
 
 Use:
 
@@ -93,6 +48,10 @@ Repository URL: https://github.com/dart998/docker-pihole-wd-ex4100
 Repository reference: refs/heads/main
 Compose path: compose/portainer-stack.yml
 ```
+
+The repository is public and does not contain passwords or Docker Hub tokens. Define real secrets through Portainer environment variables or GitHub repository secrets.
+
+## Automatic Portainer updates
 
 Enable automatic updates with:
 
