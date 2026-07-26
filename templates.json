@@ -1,0 +1,57 @@
+{
+  "version": "2",
+  "templates": [
+    {
+      "type": 3,
+      "title": "Pi-hole WD EX4100 ARMv7",
+      "name": "pihole-wd-ex4100",
+      "description": "Pi-hole adapted for WD My Cloud EX4100 ARMv7 using Alpine 3.17.10 and host networking.",
+      "note": "Uses host networking because Docker bridge port publishing on the EX4100 can return SERVFAIL on DNS port 53. Web UI defaults to HTTP 32768 and HTTPS 32769.",
+      "administrator_only": true,
+      "categories": ["dns", "network", "security"],
+      "platform": "linux",
+      "repository": {
+        "url": "https://github.com/dart998/docker-pihole-wd-ex4100",
+        "stackfile": "compose/portainer-stack.yml"
+      },
+      "env": [
+        {
+          "name": "PIHOLE_PASSWORD",
+          "label": "Pi-hole admin password",
+          "description": "Password for the Pi-hole web interface. Change this before deployment.",
+          "default": "CAMBIA_ESTA_PASSWORD"
+        },
+        {
+          "name": "TZ",
+          "label": "Timezone",
+          "description": "IANA timezone used by Pi-hole.",
+          "default": "Europe/Madrid"
+        },
+        {
+          "name": "DNS_UPSTREAMS",
+          "label": "Upstream DNS servers",
+          "description": "Semicolon-separated upstream DNS servers.",
+          "default": "8.8.8.8;8.8.4.4"
+        },
+        {
+          "name": "WEB_SERVER_PORTS",
+          "label": "Pi-hole web server ports",
+          "description": "Pi-hole FTL webserver port definition for HTTP and HTTPS.",
+          "default": "32768o,[::]:32768o,32769os,[::]:32769os"
+        },
+        {
+          "name": "PIHOLE_CONFIG_PATH",
+          "label": "Pi-hole persistent data path",
+          "description": "Host path mounted at /etc/pihole.",
+          "default": "/shares/Volume_1/docker/pihole-ex4100/etc-pihole"
+        },
+        {
+          "name": "DNSMASQ_CONFIG_PATH",
+          "label": "dnsmasq persistent data path",
+          "description": "Host path mounted at /etc/dnsmasq.d.",
+          "default": "/shares/Volume_1/docker/pihole-ex4100/etc-dnsmasq.d"
+        }
+      ]
+    }
+  ]
+}
