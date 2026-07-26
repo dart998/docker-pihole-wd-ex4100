@@ -25,7 +25,7 @@ This project keeps the official Pi-hole Docker source and applies only the compa
 Current image:
 
 ```text
-ovelayos/pihole-wd-ex4100:2026.04.1-ex4100-r4
+ovelayos/pihole-wd-ex4100:2026.07.2-ex4100-r4
 ```
 
 Rolling aliases:
@@ -65,7 +65,7 @@ It defines a Compose stack template (`type: 3`) and loads:
 compose/portainer-stack.yml
 ```
 
-The deployment form exposes the Pi-hole password, timezone, upstream DNS servers, web ports and persistent data paths.
+The deployment form exposes the Pi-hole password, timezone, web ports and persistent data paths. Upstream DNS servers remain configurable from the Pi-hole web interface.
 
 ## Manual Portainer Custom Template
 
@@ -127,14 +127,13 @@ PIHOLE_PASSWORD=CAMBIA_ESTA_PASSWORD
 Default configuration:
 
 ```env
-PIHOLE_IMAGE=ovelayos/pihole-wd-ex4100:2026.04.1-ex4100-r4
+PIHOLE_IMAGE=ovelayos/pihole-wd-ex4100:2026.07.2-ex4100-r4
 CONTAINER_NAME=pihole-ex4100
 HOSTNAME=pihole-ex4100
 TZ=Europe/Madrid
 PIHOLE_PASSWORD=CAMBIA_ESTA_PASSWORD
 DNS_LISTENING_MODE=ALL
-DNS_UPSTREAMS=8.8.8.8;8.8.4.4
-WEB_SERVER_PORTS=32768o,[::]:32768o,32769os,[::]:32769os
+WEB_SERVER_PORTS=32768,32769s
 PIHOLE_CONFIG_PATH=/shares/Volume_1/docker/pihole-ex4100/etc-pihole
 DNSMASQ_CONFIG_PATH=/shares/Volume_1/docker/pihole-ex4100/etc-dnsmasq.d
 ```
@@ -177,7 +176,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 .\build-and-push.ps1 `
   -DockerHubUser ovelayos `
-  -PiholeTag 2026.04.1 `
+  -PiholeTag 2026.07.2 `
   -Revision r4
 ```
 
@@ -185,7 +184,7 @@ The script clones the exact upstream tag, applies the EX4100 compatibility patch
 
 ## GitHub Actions
 
-The build workflow runs automatically on pushes to `main` and can also be started manually.
+The build workflow checks the latest stable official Pi-hole Docker release every six hours. It can also be started manually and runs when the build workflow or compatibility scripts change on `main`.
 
 Required repository secrets:
 
@@ -194,13 +193,27 @@ DOCKERHUB_USERNAME
 DOCKERHUB_TOKEN
 ```
 
-The workflow:
+For each new official release, the workflow:
 
-1. Clones the selected official Pi-hole Docker tag.
-2. Applies and validates the EX4100 patch.
-3. Builds a local ARMv7 image.
-4. Runs smoke tests through QEMU.
-5. Pushes the validated image to Docker Hub.
+1. Resolves and validates the latest stable official `pi-hole/docker-pi-hole` tag.
+2. Skips the build when the matching EX4100 repository tag already exists.
+3. Applies and validates the EX4100 compatibility patch.
+4. Builds a local single-platform `linux/arm/v7` image without provenance or SBOM metadata.
+5. Runs smoke tests through QEMU.
+6. Pushes the versioned image and rolling aliases to Docker Hub.
+7. Creates the repository tag only after the image has been built, tested and pushed successfully.
+
+Repository tags use this format:
+
+```text
+<official-tag>-ex4100-r4
+```
+
+Example:
+
+```text
+2026.07.2-ex4100-r4
+```
 
 ## Persistent data
 
