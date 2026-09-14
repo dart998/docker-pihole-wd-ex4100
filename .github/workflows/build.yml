@@ -210,6 +210,20 @@ jobs:
             git push origin HEAD:main
           fi
 
+      - name: Redeploy Portainer stack
+        if: steps.release.outputs.skip != 'true'
+        shell: bash
+        env:
+          PORTAINER_WEBHOOK_URL: ${{ secrets.PORTAINER_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          test -n "${PORTAINER_WEBHOOK_URL}"
+          curl --fail --silent --show-error \
+            --request POST \
+            --retry 3 \
+            --retry-delay 5 \
+            "${PORTAINER_WEBHOOK_URL}"
+
       - name: Create repository tag
         if: steps.release.outputs.skip != 'true'
         shell: bash
