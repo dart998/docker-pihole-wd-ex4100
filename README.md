@@ -25,7 +25,7 @@ This project keeps the official Pi-hole Docker source and applies only the compa
 Current image:
 
 ```text
-ovelayos/pihole-wd-ex4100:2026.07.2-ex4100-r4
+ovelayos/pihole-wd-ex4100:2026.09.0-ex4100-r4
 ```
 
 Rolling aliases:
@@ -109,7 +109,7 @@ PIHOLE_PASSWORD=CAMBIA_ESTA_PASSWORD
 Default configuration:
 
 ```env
-PIHOLE_IMAGE=ovelayos/pihole-wd-ex4100:2026.07.2-ex4100-r4
+PIHOLE_IMAGE=ovelayos/pihole-wd-ex4100:2026.09.0-ex4100-r4
 CONTAINER_NAME=pihole-ex4100
 HOSTNAME=pihole-ex4100
 TZ=Europe/Madrid
@@ -158,7 +158,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 .\build-and-push.ps1 `
   -DockerHubUser ovelayos `
-  -PiholeTag 2026.07.2 `
+  -PiholeTag 2026.09.0 `
   -Revision r4
 ```
 
@@ -197,7 +197,7 @@ Repository tags use this format:
 Example:
 
 ```text
-2026.07.2-ex4100-r4
+2026.09.0-ex4100-r4
 ```
 
 ## Persistent data
