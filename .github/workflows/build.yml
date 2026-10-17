@@ -173,20 +173,26 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Push validated image
+      - name: Push versioned validated image
         if: steps.release.outputs.skip != 'true'
         shell: bash
         run: |
           set -euo pipefail
           docker tag "$LOCAL_IMAGE" "$RELEASE_IMAGE"
+          docker push "$RELEASE_IMAGE"
+
+      - name: Push stable aliases
+        if: steps.release.outputs.skip != 'true' && github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
           docker tag "$LOCAL_IMAGE" ovelayos/pihole-wd-ex4100:latest-ex4100-armv7
           docker tag "$LOCAL_IMAGE" ovelayos/pihole-wd-ex4100:legacy-armv7
-          docker push "$RELEASE_IMAGE"
           docker push ovelayos/pihole-wd-ex4100:latest-ex4100-armv7
           docker push ovelayos/pihole-wd-ex4100:legacy-armv7
 
       - name: Promote validated image in stable stack
-        if: steps.release.outputs.skip != 'true'
+        if: steps.release.outputs.skip != 'true' && github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -211,7 +217,7 @@ jobs:
           fi
 
       - name: Redeploy Portainer stack
-        if: steps.release.outputs.skip != 'true'
+        if: steps.release.outputs.skip != 'true' && github.event_name == 'workflow_dispatch'
         shell: bash
         env:
           PORTAINER_WEBHOOK_URL: ${{ secrets.PORTAINER_WEBHOOK_URL }}
@@ -225,7 +231,7 @@ jobs:
             "${PORTAINER_WEBHOOK_URL}"
 
       - name: Create repository tag
-        if: steps.release.outputs.skip != 'true'
+        if: steps.release.outputs.skip != 'true' && github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
