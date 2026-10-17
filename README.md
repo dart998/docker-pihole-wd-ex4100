@@ -46,7 +46,7 @@ Use:
 ```text
 Repository URL: https://github.com/dart998/docker-pihole-wd-ex4100
 Repository reference: refs/heads/main
-Compose path: compose/portainer-stack.yml
+Compose path: docker-compose.yml
 ```
 
 The repository is public and does not contain passwords or Docker Hub tokens. Define real secrets through Portainer environment variables or GitHub repository secrets.
@@ -69,7 +69,7 @@ Force redeployment: disabled
 The recommended stack is:
 
 ```text
-compose/portainer-stack.yml
+docker-compose.yml
 ```
 
 It uses:
@@ -183,7 +183,7 @@ For each new official release, the workflow:
 4. Builds a local single-platform `linux/arm/v7` image without provenance or SBOM metadata.
 5. Runs smoke tests through QEMU.
 6. Pushes the versioned image and rolling aliases to Docker Hub.
-7. Updates the stable image references in the Portainer stack, `.env.example` and README, then commits them to `main`.
+7. Updates the stable image references in `docker-compose.yml`, `.env.example` and README, then commits them to `main`.
 8. Creates the repository tag only after the image has been built, tested, published and promoted successfully.
 
 That promotion commit is what Portainer Git polling detects to update the running stack.
