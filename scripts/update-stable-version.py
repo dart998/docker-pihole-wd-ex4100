@@ -48,7 +48,7 @@ def main() -> int:
     versioned_image = f"{IMAGE_REPOSITORY}:{repository_tag}"
 
     replace_required(
-        Path("compose/portainer-stack.yml"),
+        Path("docker-compose.yml"),
         VERSIONED_IMAGE_PATTERN,
         versioned_image,
     )
