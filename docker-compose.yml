@@ -1,0 +1,33 @@
+version: "2.4"
+
+services:
+  pihole:
+    image: ${PIHOLE_IMAGE:-ovelayos/pihole-wd-ex4100:2026.09.0-ex4100-r4}
+    container_name: ${CONTAINER_NAME:-pihole-ex4100}
+    hostname: ${HOSTNAME:-pihole-ex4100}
+    network_mode: host
+    restart: unless-stopped
+
+    environment:
+      TZ: "${TZ:-Europe/Madrid}"
+      FTLCONF_webserver_api_password: "${PIHOLE_PASSWORD}"
+      FTLCONF_dns_listeningMode: "${DNS_LISTENING_MODE:-ALL}"
+      FTLCONF_webserver_port: "${WEB_SERVER_PORTS:-32768,32769s}"
+
+    volumes:
+      - ${PIHOLE_CONFIG_PATH:-/shares/Volume_1/docker/pihole-ex4100/etc-pihole}:/etc/pihole
+      - ${DNSMASQ_CONFIG_PATH:-/shares/Volume_1/docker/pihole-ex4100/etc-dnsmasq.d}:/etc/dnsmasq.d
+
+    cap_add:
+      - NET_BIND_SERVICE
+      - NET_RAW
+      - CHOWN
+
+    security_opt:
+      - seccomp:unconfined
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
